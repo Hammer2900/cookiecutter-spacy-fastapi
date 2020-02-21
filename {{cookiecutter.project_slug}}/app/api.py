@@ -17,15 +17,12 @@ from app.models import (
     RecordsResponse,
     RecordsEntitiesByTypeResponse,
 )
-from app.spacy_extractor import SpacyExtractor
-
 
 load_dotenv(find_dotenv())
 prefix = os.getenv("CLUSTER_ROUTE_PREFIX")
 if not prefix:
     prefix = ""
 prefix = prefix.rstrip("/")
-
 
 app = FastAPI(
     title="{{cookiecutter.project_name}}",
@@ -36,8 +33,6 @@ app = FastAPI(
 
 # nlp = spacy.load("{{cookiecutter.project_language}}")
 nlp = spacy.load("en_core_web_sm")
-extractor = SpacyExtractor(nlp)
-
 
 ENT_PROP_MAP = {
     "CARDINAL": "cardinals",
@@ -76,14 +71,6 @@ async def extract_entities(body: RecordsRequest):
     for val in body.values:
         documents.append({"id": val.recordId, "text": val.data.text})
 
-    entities_res = extractor.extract_entities(documents)
-    print(entities_res)
-
-    res = [
-        {"recordId": er["id"], "data": {"entities": er["entities"]}}
-        for er in entities_res
-    ]
-
     return {"values": res}
 
 
@@ -102,15 +89,6 @@ async def extract_entities_by_type(body: RecordsRequest):
     for val in body.values:
         documents.append({"id": val.recordId, "text": val.data.text})
 
-    entities_res = extractor.extract_entities(documents)
     res = []
-
-    for er in entities_res:
-        groupby = defaultdict(list)
-        for ent in er["entities"]:
-            ent_prop = ENT_PROP_MAP[ent["label"]]
-            groupby[ent_prop].append(ent["name"])
-        record = {"recordId": er["id"], "data": groupby}
-        res.append(record)
 
     return {"values": res}
